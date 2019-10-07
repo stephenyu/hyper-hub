@@ -3,8 +3,15 @@ const fs = require('fs');
 const chalk = require('chalk');
 const { exec } = require('child_process');
 const readline = require('readline');
+const path = require('path');
 
-const configurationFileLocation = "./.configuration";
+const TimeAgo = require('javascript-time-ago');
+const en = require('javascript-time-ago/locale/en');
+TimeAgo.addLocale(en);
+
+const timeAgo = new TimeAgo('en-US');
+
+const configurationFileLocation = path.resolve(__dirname, '..', '.configuration');
 
 function displayPRs(PRs, longestPRNumber) {
     const displayNumber = (number) => {
@@ -19,8 +26,9 @@ function displayPRs(PRs, longestPRNumber) {
         }
     }
 
-    PRs.forEach(({number, title, author}) => {
-        console.log(`${chalk.green('#'+displayNumber(number))} - ${title.trim()} - ${chalk.yellow(author)}`);
+    PRs.forEach(({number, title, author, created_at, updated_at, url}) => {
+        const time = `${timeAgo.format(new Date(created_at))} (${timeAgo.format(new Date(updated_at))})`
+        console.log(`${chalk.green('#'+displayNumber(number))}  ${title.trim()}  ${chalk.yellow(author)}  ${chalk.blue(time)}`);
     });
 }
 
@@ -53,7 +61,10 @@ async function getPRs(token, login) {
                 return;
             }
 
+
             const body = JSON.parse(stdout);
+            console.log(body);
+
             resolve(body.items);
         });
     });
@@ -88,7 +99,7 @@ async function createTokenConfig() {
             const { login, token } = JSON.parse(fs.readFileSync(configurationFileLocation, 'utf8'));
 
             const result = await getPRs(token, login);
-            const PRs = result.map(prRAW => ({number: prRAW.number, author: prRAW.user.login, title: prRAW.title, labels: []}));
+            const PRs = result.map(prRAW => ({number: prRAW.number, author: prRAW.user.login, title: prRAW.title, url: prRAW.url, created_at: prRAW.created_at, updated_at: prRAW.updated_at, labels: []}));
 
             const longestPRNumber = result.reduce((longest, pr) => {
                 const string = ''+pr.number;

@@ -61,10 +61,7 @@ async function getPRs(token, login) {
                 return;
             }
 
-
             const body = JSON.parse(stdout);
-            console.log(body);
-
             resolve(body.items);
         });
     });

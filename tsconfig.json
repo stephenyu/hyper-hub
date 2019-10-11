@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./src",
+        "module": "commonjs",
+        "noImplicitAny": false,
+        "outFile": "./bin/hhub.js",
+        "moduleResolution": "node",
+        "target": "es6"
+    }
+}

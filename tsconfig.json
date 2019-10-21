@@ -3,7 +3,7 @@
         "baseUrl": "./src",
         "module": "commonjs",
         "noImplicitAny": false,
-        "outFile": "./bin/hhub.js",
+        "outDir": "bin",
         "moduleResolution": "node",
         "target": "es6"
     }

@@ -1,11 +1,11 @@
-import * as fs from 'fs';
 import chalk from 'chalk';
-import { exec } from 'child_process';
+import { format } from 'timeago.js';
+
+import * as fs from 'fs';
 import * as readline from 'readline';
 import * as path from 'path';
+import { exec } from 'child_process';
 
-import TimeAgo from 'javascript-time-ago';
-import en from 'javascript-time-ago/locale/en';
 
 interface PR {
     number: string;
@@ -27,13 +27,8 @@ interface GithubPR {
     updated_at: string;
 }
 
-            // const PRs = result.map(prRAW => ({number: prRAW.number, author: prRAW.user.login, title: prRAW.title, url: prRAW.url, created_at: prRAW.created_at, updated_at: prRAW.updated_at, labels: []}));
-
 type PRs = PR[];
 
-TimeAgo.addLocale(en);
-
-const timeAgo = new TimeAgo('en-US');
 const configurationFileLocation = path.resolve(__dirname, '..', '.configuration');
 
 function displayPRs(PRs: PRs, longestPRNumber: number) {
@@ -50,7 +45,7 @@ function displayPRs(PRs: PRs, longestPRNumber: number) {
     }
 
     PRs.forEach(({number, title, author, created_at, updated_at}) => {
-        const time = `${timeAgo.format(new Date(created_at))} (${timeAgo.format(new Date(updated_at))})`
+        const time = `${format(new Date(created_at),'en_US')} (${format(new Date(updated_at), 'en_US')})`
         console.log(`${chalk.green('#'+displayNumber(number))}  ${title.trim()}  ${chalk.yellow(author)}  ${chalk.blue(time)}`);
     });
 }

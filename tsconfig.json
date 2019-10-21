@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./src",
+        "module": "commonjs",
+        "noImplicitAny": false,
+        "outDir": "bin",
+        "moduleResolution": "node",
+        "target": "es6"
+    }
+}

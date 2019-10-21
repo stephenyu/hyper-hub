@@ -1,20 +1,38 @@
-#!/usr/bin/env node
-const fs = require('fs');
-const chalk = require('chalk');
-const { exec } = require('child_process');
-const readline = require('readline');
-const path = require('path');
+import chalk from 'chalk';
+import { format } from 'timeago.js';
 
-const TimeAgo = require('javascript-time-ago');
-const en = require('javascript-time-ago/locale/en');
-TimeAgo.addLocale(en);
+import * as fs from 'fs';
+import * as readline from 'readline';
+import * as path from 'path';
+import { exec } from 'child_process';
 
-const timeAgo = new TimeAgo('en-US');
+
+interface PR {
+    number: string;
+    title: string;
+    author: string;
+    created_at: string;
+    updated_at: string;
+    url: string;
+}
+
+interface GithubPR {
+    number: string;
+    user: {
+        login: string;
+    };
+    title: string;
+    url: string;
+    created_at: string;
+    updated_at: string;
+}
+
+type PRs = PR[];
 
 const configurationFileLocation = path.resolve(__dirname, '..', '.configuration');
 
-function displayPRs(PRs, longestPRNumber) {
-    const displayNumber = (number) => {
+function displayPRs(PRs: PRs, longestPRNumber: number) {
+    const displayNumber = (number: string) => {
         const string = ''+number;
 
         if (string.length === longestPRNumber) {
@@ -26,17 +44,17 @@ function displayPRs(PRs, longestPRNumber) {
         }
     }
 
-    PRs.forEach(({number, title, author, created_at, updated_at, url}) => {
-        const time = `${timeAgo.format(new Date(created_at))} (${timeAgo.format(new Date(updated_at))})`
+    PRs.forEach(({number, title, author, created_at, updated_at}) => {
+        const time = `${format(new Date(created_at),'en_US')} (${format(new Date(updated_at), 'en_US')})`
         console.log(`${chalk.green('#'+displayNumber(number))}  ${title.trim()}  ${chalk.yellow(author)}  ${chalk.blue(time)}`);
     });
 }
 
-function getUserName(token) {
+function getUserName(token: string) {
     return new Promise((resolve, reject) => {
         const cmd = `curl -H "Authorization: token ${token}" https://api.github.com/user`;
 
-        exec(cmd, (error, stdout) => {
+            exec(cmd, (error, stdout) => {
             if (error) {
                 console.error(`Unable to get Github Username: ${error}`);
                 reject();
@@ -51,11 +69,11 @@ function getUserName(token) {
     });
 }
 
-async function getPRs(token, login) {
+async function getPRs(token: string, login: string): Promise<GithubPR[]> {
     return new Promise(resolve => {
         const cmd = `curl -H "Authorization: token ${token}" https://api.github.com/search/issues?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc+review-requested%3A${login}`;
 
-        exec(cmd, (error, stdout) => {
+            exec(cmd, (error, stdout) => {
             if (error) {
                 console.error(`Unable to get PRs: ${error}`);
                 return;

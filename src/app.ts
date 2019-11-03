@@ -1,133 +1,140 @@
-import chalk from 'chalk';
-import { format } from 'timeago.js';
+import * as util from "util";
+import * as readline from "readline";
+import * as path from "path";
+import { exec } from "child_process";
 
-import * as fs from 'fs';
-import * as readline from 'readline';
-import * as path from 'path';
-import { exec } from 'child_process';
+import { format } from "timeago.js";
+import chalk from "chalk";
 
+import { Configuration } from "./Configuration";
+
+const promiseExec = util.promisify(exec);
 
 interface PR {
-    number: string;
-    title: string;
-    author: string;
-    created_at: string;
-    updated_at: string;
-    url: string;
+  number: string;
+  title: string;
+  author: string;
+  created_at: string;
+  updated_at: string;
+  url: string;
 }
 
 interface GithubPR {
-    number: string;
-    user: {
-        login: string;
-    };
-    title: string;
-    url: string;
-    created_at: string;
-    updated_at: string;
+  number: string;
+  user: {
+    login: string;
+  };
+  title: string;
+  url: string;
+  created_at: string;
+  updated_at: string;
 }
 
-type PRs = PR[];
+class Application {
+  private config: Configuration;
 
-const configurationFileLocation = path.resolve(__dirname, '..', '.configuration');
+  constructor(configurationFileLocation: string) {
+    this.config = new Configuration(configurationFileLocation);
+  }
 
-function displayPRs(PRs: PRs, longestPRNumber: number) {
+  async start() {
+    if (
+      this.config.githubLogin === undefined ||
+      this.config.githubToken === undefined
+    ) {
+      await this.createTokenConfig();
+    }
+    await this.displayPRs();
+  }
+
+  async displayPRs() {
+    const pullRequests = await this.getPullRequests();
+
+    const longestPRNumber = pullRequests.reduce((longest, pr) => {
+      const string = "" + pr.number;
+      return string.length > longest ? string.length : longest;
+    }, 0);
+
     const displayNumber = (number: string) => {
-        const string = ''+number;
+      const string = "" + number;
 
-        if (string.length === longestPRNumber) {
-            return number;
-        } else {
-            // Has to be less than
-            const spacing = longestPRNumber - string.length;
-            return `${number}${Array(spacing).fill(1).map(_ => ' ').join()}`;
+      if (string.length === longestPRNumber) {
+        return number;
+      } else {
+        // Has to be less than
+        const spacing = longestPRNumber - string.length;
+        return `${number}${" ".repeat(spacing)}`;
+      }
+    };
+
+    if (pullRequests.length === 0) {
+      console.log(chalk.green("Empty! No PRs Assigned"));
+    } else {
+      pullRequests.forEach(
+        ({ number, title, author, created_at, updated_at }) => {
+          const time = `${format(new Date(created_at), "en_US")} (${format(
+            new Date(updated_at),
+            "en_US"
+          )})`;
+
+          console.log(
+            `${chalk.green(
+              "#" + displayNumber(number)
+            )}  ${title.trim()}  ${chalk.yellow(author)}  ${chalk.blue(time)}`
+          );
         }
+      );
     }
+  }
 
-    PRs.forEach(({number, title, author, created_at, updated_at}) => {
-        const time = `${format(new Date(created_at),'en_US')} (${format(new Date(updated_at), 'en_US')})`
-        console.log(`${chalk.green('#'+displayNumber(number))}  ${title.trim()}  ${chalk.yellow(author)}  ${chalk.blue(time)}`);
-    });
-}
+  private async getPullRequests(): Promise<PR[]> {
+    const cmd = `curl -H "Authorization: token ${this.config.githubToken}" https://api.github.com/search/issues?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc+review-requested%3A${this.config.githubLogin}`;
+    const { stdout } = await promiseExec(cmd);
 
-function getUserName(token: string) {
-    return new Promise((resolve, reject) => {
-        const cmd = `curl -H "Authorization: token ${token}" https://api.github.com/user`;
+    const body = JSON.parse(stdout) as { items: GithubPR[] };
 
-            exec(cmd, (error, stdout) => {
-            if (error) {
-                console.error(`Unable to get Github Username: ${error}`);
-                reject();
-            }
+    const pullRequests = body.items.map(prRAW => ({
+      number: prRAW.number,
+      author: prRAW.user.login,
+      title: prRAW.title,
+      url: prRAW.url,
+      created_at: prRAW.created_at,
+      updated_at: prRAW.updated_at,
+      labels: []
+    }));
 
-            const body = JSON.parse(stdout);
+    return pullRequests;
+  }
 
-            (body.login)
-                ? resolve(body.login)
-                : reject();
-        });
-    });
-}
+  private async getUserName(token: string) {
+    const cmd = `curl -H "Authorization: token ${token}" https://api.github.com/user`;
+    const promiseExec = util.promisify(exec);
 
-async function getPRs(token: string, login: string): Promise<GithubPR[]> {
-    return new Promise(resolve => {
-        const cmd = `curl -H "Authorization: token ${token}" https://api.github.com/search/issues?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc+review-requested%3A${login}`;
-
-            exec(cmd, (error, stdout) => {
-            if (error) {
-                console.error(`Unable to get PRs: ${error}`);
-                return;
-            }
-
-            const body = JSON.parse(stdout);
-            resolve(body.items);
-        });
-    });
-}
-
-async function createTokenConfig() {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    console.info('Visit https://github.com/settings/tokens and create a Personal access tokens');
-
-    rl.question('Token: ', async token => {
-        try {
-            const login = await getUserName(token);
-
-            fs.writeFileSync(configurationFileLocation, JSON.stringify({
-                token, login
-            }), 'utf8');
-
-            process.exit();
-        } catch {
-            throw new Error('Unable to get Username');
-        }
-    });
-}
-
-(async () => {
     try {
-        if (fs.existsSync(configurationFileLocation)) {
-            const { login, token } = JSON.parse(fs.readFileSync(configurationFileLocation, 'utf8'));
-
-            const result = await getPRs(token, login);
-            const PRs = result.map(prRAW => ({number: prRAW.number, author: prRAW.user.login, title: prRAW.title, url: prRAW.url, created_at: prRAW.created_at, updated_at: prRAW.updated_at, labels: []}));
-
-            const longestPRNumber = result.reduce((longest, pr) => {
-                const string = ''+pr.number;
-                return (string.length > longest)
-                    ? string.length
-                    : longest;
-            }, 0);
-
-            displayPRs(PRs, longestPRNumber);
-        } else {
-            await createTokenConfig();
-        }
-    } catch(err) {
-        console.error(err)
+      const { stdout } = await promiseExec(cmd);
+      const body = JSON.parse(stdout);
+      return body.login;
+    } catch (error) {
+      return "";
     }
-})();
+  }
+
+  private async createTokenConfig() {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    console.info(
+      "Visit https://github.com/settings/tokens and create a Personal access tokens"
+    );
+
+    rl.question("Token: ", async token => {
+      const login = await this.getUserName(token);
+      this.config.writeConfigurationFile({ login, token });
+    });
+  }
+}
+
+const app = new Application(path.resolve(__dirname, "..", ".configuration"));
+app.start();

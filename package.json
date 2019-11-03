@@ -4,16 +4,26 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "@types/jest": "^24.0.19",
     "@types/node": "^12.7.12",
     "chalk": "^2.4.2",
+    "eslint": "^6.5.1",
     "javascript-time-ago": "^2.0.3",
+    "jest": "^24.9.0",
+    "prettier": "^1.18.2",
     "timeago.js": "^4.0.0",
     "typescript": "^3.6.4"
   },
   "scripts": {
-      "build": "tsc"
+    "build": "./conf/build.sh",
+    "pretest": "./conf/pretest.sh",
+    "lint": "tsc --noEmit",
+    "test": "jest"
   },
   "bin": {
-    "hhub": "bin/app.js"
+    "hhub": "./bin/runner.js"
+  },
+  "devDependencies": {
+    "ts-node": "^8.4.1"
   }
 }

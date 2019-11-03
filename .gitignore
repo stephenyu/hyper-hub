@@ -1,3 +1,5 @@
 .configuration
 node_modules
 package-lock.json
+bin
+target

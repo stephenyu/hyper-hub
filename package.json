@@ -1,6 +1,6 @@
 {
   "name": "hyper-hub",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
@@ -17,12 +17,12 @@
     "hhub": "./bin/runner.js"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.19",
+    "@types/node": "^12.7.12",
     "eslint": "^6.5.1",
     "jest": "^24.9.0",
     "prettier": "^1.18.2",
     "ts-node": "^8.4.1",
-    "typescript": "^3.6.4",
-    "@types/jest": "^24.0.19",
-    "@types/node": "^12.7.12"
+    "typescript": "^3.6.4"
   }
 }

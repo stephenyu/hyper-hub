@@ -28,6 +28,7 @@ class Application {
                 yield this.createTokenConfig();
             }
             yield this.displayPRs();
+            process.exit();
         });
     }
     displayPRs() {
@@ -92,15 +93,18 @@ class Application {
     }
     createTokenConfig() {
         return __awaiter(this, void 0, void 0, function* () {
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
+            return new Promise(resolve => {
+                const rl = readline.createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                });
+                console.info("Visit https://github.com/settings/tokens and create a Personal access tokens");
+                rl.question("Token: ", (token) => __awaiter(this, void 0, void 0, function* () {
+                    const login = yield this.getUserName(token);
+                    this.config.writeConfigurationFile({ login, token });
+                    resolve({ login, token });
+                }));
             });
-            console.info("Visit https://github.com/settings/tokens and create a Personal access tokens");
-            rl.question("Token: ", (token) => __awaiter(this, void 0, void 0, function* () {
-                const login = yield this.getUserName(token);
-                this.config.writeConfigurationFile({ login, token });
-            }));
         });
     }
 }

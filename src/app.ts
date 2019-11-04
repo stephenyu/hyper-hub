@@ -45,6 +45,7 @@ class Application {
       await this.createTokenConfig();
     }
     await this.displayPRs();
+    process.exit();
   }
 
   async displayPRs() {
@@ -120,18 +121,21 @@ class Application {
   }
 
   private async createTokenConfig() {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+    return new Promise(resolve => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
 
-    console.info(
-      "Visit https://github.com/settings/tokens and create a Personal access tokens"
-    );
+      console.info(
+        "Visit https://github.com/settings/tokens and create a Personal access tokens"
+      );
 
-    rl.question("Token: ", async token => {
-      const login = await this.getUserName(token);
-      this.config.writeConfigurationFile({ login, token });
+      rl.question("Token: ", async token => {
+        const login = await this.getUserName(token);
+        this.config.writeConfigurationFile({ login, token });
+        resolve({ login, token });
+      });
     });
   }
 }
